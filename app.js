@@ -1,6 +1,10 @@
 import 'dotenv/config'
 import Datastore from 'nedb-promises';
 import fetch from "node-fetch";
+import util from "util";
+import cron from "node-cron";
+
+const wait = util.promisify(setTimeout);
 
 const TOKEN = process.env.TOKEN;
 
@@ -29,6 +33,26 @@ async function getStockValue(){
         const stockValue = companyData[4];
     
         return stockValue;
+
+    } catch (error) {
+        throw "株価を取得できませんでした";
+
+    }
+
+}
+
+async function getDetailedtockValue(){
+    try {
+        const response = await fetch(GOOGLE_FINANCE_PRICE_UPDATES_URI);
+        const text = await response.text();
+        const json = JSON.parse(text.slice(5));
+        const companyData = json["PriceUpdate"][0][0][0][17];
+        
+        const stockValue = companyData[4];
+        const percent = companyData[6];
+        const differenceValue = companyData[7];
+    
+        return [ stockValue, differenceValue, percent ];
 
     } catch (error) {
         throw "株価を取得できませんでした";
@@ -116,12 +140,44 @@ function createStatusText(user, stockValue, username){
 
 }
 
-import { Client, GatewayIntentBits, time } from 'discord.js';
+import { ActivityType, Client, GatewayIntentBits } from 'discord.js';
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
+async function changeActivity(client){
+    const date = new Date()
+    const minute = date.getMinutes()
+    const hour = date.getHours()
+
+    const [ stockValue, differenceValue, percent ]  = await getDetailedtockValue()
+
+    client.user.setActivity(`${ hour }:${ minute }の株価:${ stockValue } ${ differenceValue >= 0 ? '+' + differenceValue : differenceValue }(${ percent })`, { type : ActivityType.Playing })
+
+}
+
+function isMarketOpen() {
+    const date = new Date()
+    const minute = date.getMinutes()
+    const hour = date.getHours()
+
+    if((hour >= 9 && ( hour <= 11 && minute < 30 )) || (( hour >= 12 && minute >= 30 ) && hour < 15 )){
+        return true;
+    } else {
+        return false;
+    }
+
+}
+
+
 client.on('ready', () => {
+    changeActivity(client)
+    cron.schedule('*/30 * * * *', async () => {
+        changeActivity(client)
+
+    });
+
     console.log(`Logged in as ${client.user.tag}!`);
 });
+
 
 client.on('interactionCreate', async interaction => {
     if (!interaction.isChatInputCommand()) return;
