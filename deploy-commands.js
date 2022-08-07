@@ -17,6 +17,7 @@ const commands = [
 	new SlashCommandBuilder().setName('sell').setDescription(`${ companyName }の株を売ります`).addIntegerOption(option => {return option.setName('amount').setDescription("売却数を指定します").setRequired(true)}).toJSON(),
 	new SlashCommandBuilder().setName('show').setDescription('成績を表示します').toJSON(),
 	new SlashCommandBuilder().setName('rank').setDescription('ランキングを表示します').toJSON(),
+	new SlashCommandBuilder().setName('spin').setDescription('社運を天に任せます').toJSON()
 ]
 
 const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);

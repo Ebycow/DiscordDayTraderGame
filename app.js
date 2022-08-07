@@ -219,6 +219,47 @@ client.on('interactionCreate', async interaction => {
         }
 
     }
+
+    if (interaction.commandName === 'spin') {
+        const emjs = []
+        const emojis = await interaction.guild.emojis.fetch()
+    
+        for (const e of emojis) {
+            // GIF絵文字を除外
+            if(!e[1].animated) {
+                emjs.push(`<:${e[1].name}:${e[0]}>`)
+            }
+            
+        }
+
+        const spinner = []
+        for (let index = 0; index < 3; index++) {
+            spinner.push(emjs[Math.floor( Math.random() * emjs.length )])
+        }
+        let str = ""
+        let count = 0
+        await interaction.reply(":slot_machine: SLOT START!! :slot_machine:")
+        
+        for (const e of spinner) {
+            str += e
+            count++
+            
+            if(spinner[0] === spinner[1] && count == 3){
+                
+                await wait(10000)
+            } else {
+                await wait(1000)
+            }
+            
+            await interaction.editReply(str)
+
+        }
+
+        if(spinner.every(v => v === spinner[0])) {
+            await interaction.followUp(process.env.SLOT_TEXT)
+        }
+
+	}
     
 });
 
